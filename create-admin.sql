@@ -1,21 +1,32 @@
--- Script untuk membuat admin pertama
+-- ============================================================================
+-- Script untuk Membuat Admin Pertama di KomCS PJB
+-- ============================================================================
 --
--- INSTRUKSI:
--- 1. Buka Supabase Dashboard → Authentication → Users
--- 2. Klik "Add User" → "Create New User"
--- 3. Isi:
+-- PENTING: Baca QUICK-SETUP-ADMIN.md untuk panduan lengkap!
+--
+-- LANGKAH CEPAT:
+--
+-- 1. Buka Supabase Dashboard (https://supabase.com)
+-- 2. Pilih project Anda
+-- 3. Klik "Authentication" → "Users"
+-- 4. Klik "Add User" → "Create New User"
+-- 5. Isi:
 --    Email: admin@komcs.com
 --    Password: Admin123!
---    Auto Confirm User: CENTANG
--- 4. Klik "Create User"
--- 5. CATAT UUID user yang baru dibuat (contoh: a1b2c3d4-e5f6-7890-abcd-ef1234567890)
--- 6. Ganti 'UUID_USER_DARI_SUPABASE' di bawah dengan UUID yang dicatat
--- 7. Jalankan script ini di Supabase SQL Editor
+--    ☑ CENTANG "Auto Confirm User" ← PENTING!
+-- 6. Klik "Create User"
+-- 7. COPY UUID user yang muncul (contoh: f47ac10b-58cc-4372-a567-0e02b2c3d479)
+-- 8. GANTI 'PASTE_UUID_DISINI' di bawah dengan UUID yang dicopy
+-- 9. Buka "SQL Editor" → "New Query"
+-- 10. Paste script ini dan klik "Run"
+-- 11. Login di aplikasi dengan email & password yang dibuat
+--
+-- ============================================================================
 
--- Ganti dengan UUID yang sebenarnya dari auth.users
+-- GANTI 'PASTE_UUID_DISINI' dengan UUID dari auth.users!
 INSERT INTO users (id, username, nama, role, branch_id, faktor_pengali)
 VALUES (
-  'UUID_USER_DARI_SUPABASE',  -- GANTI INI dengan UUID dari langkah 5
+  'PASTE_UUID_DISINI',  -- ← GANTI INI dengan UUID dari langkah 7!
   'admin',
   'Administrator',
   'admin',
@@ -25,3 +36,13 @@ VALUES (
 
 -- Verifikasi user berhasil dibuat
 SELECT id, username, nama, role FROM users WHERE role = 'admin';
+
+-- Jika berhasil, Anda akan melihat:
+-- id: UUID yang Anda masukkan
+-- username: admin
+-- nama: Administrator
+-- role: admin
+--
+-- Sekarang buka aplikasi dan login dengan:
+-- Email: admin@komcs.com
+-- Password: Admin123!

@@ -50,22 +50,24 @@ Database schema sudah diterapkan melalui migration Supabase. Struktur tabel:
 - `commission_mutations` - Mutasi komisi
 - `withdrawal_requests` - Permintaan penarikan
 
-5. **Buat Admin Pertama**
+5. **Buat Admin Pertama** ⚠️ WAJIB!
 
 **PENTING**: Tidak ada default admin. Anda harus membuat admin pertama secara manual.
 
-**Baca file `SETUP.md` untuk instruksi lengkap!**
+**📖 Baca file `QUICK-SETUP-ADMIN.md` untuk panduan visual lengkap!**
 
-Ringkasan cepat:
-1. Buka Supabase Dashboard → Authentication → Users
-2. Create new user (contoh: `admin@komcs.com` / `Admin123!`)
-3. Catat UUID user yang dibuat
-4. Jalankan SQL di Supabase SQL Editor:
+**Ringkasan Super Cepat:**
+1. Buka Supabase Dashboard → Authentication → Users → Add User
+2. Email: `admin@komcs.com` | Password: `Admin123!` | ☑ Auto Confirm
+3. Copy UUID user yang dibuat
+4. SQL Editor → Jalankan (ganti UUID):
 ```sql
 INSERT INTO users (id, username, nama, role)
-VALUES ('UUID_DARI_LANGKAH_2', 'admin', 'Administrator', 'admin');
+VALUES ('PASTE_UUID_DISINI', 'admin', 'Administrator', 'admin');
 ```
-5. Login dengan email & password yang dibuat
+5. Login dengan `admin@komcs.com` / `Admin123!`
+
+**Jika melihat error "Invalid credentials"** → Anda belum membuat admin!
 
 6. **Run Development**
 ```bash
