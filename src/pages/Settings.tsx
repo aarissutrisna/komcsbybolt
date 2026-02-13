@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { apiClient } from '../lib/supabase';
 import { Key } from 'lucide-react';
 
 export function Settings() {
-  const { profile } = useAuth();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -32,11 +32,10 @@ export function Settings() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: formData.newPassword,
+      await apiClient.post('/auth/change-password', {
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
       });
-
-      if (error) throw error;
 
       setMessage('Password berhasil diubah');
       setFormData({
@@ -63,17 +62,19 @@ export function Settings() {
           <h2 className="text-xl font-bold text-gray-900 mb-4">Informasi Akun</h2>
           <div className="space-y-3">
             <div>
-              <label className="text-sm font-medium text-gray-600">Nama</label>
-              <p className="text-gray-900 font-semibold">{profile?.nama}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600">Username</label>
-              <p className="text-gray-900 font-semibold">{profile?.username}</p>
+              <label className="text-sm font-medium text-gray-600">Email</label>
+              <p className="text-gray-900 font-semibold">{user?.email}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Role</label>
-              <p className="text-gray-900 font-semibold uppercase">{profile?.role}</p>
+              <p className="text-gray-900 font-semibold uppercase">{user?.role}</p>
             </div>
+            {user?.faktor_pengali && (
+              <div>
+                <label className="text-sm font-medium text-gray-600">Faktor Pengali</label>
+                <p className="text-gray-900 font-semibold">{user.faktor_pengali}</p>
+              </div>
+            )}
           </div>
         </div>
 

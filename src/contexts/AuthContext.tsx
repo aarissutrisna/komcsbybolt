@@ -1,19 +1,16 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
+import { apiClient } from '../lib/supabase';
 
 interface Profile {
   id: string;
-  username: string;
-  nama: string;
+  email: string;
   role: 'admin' | 'hrd' | 'cs';
   branch_id: string | null;
   faktor_pengali: number | null;
 }
 
 interface AuthContextType {
-  user: User | null;
-  profile: Profile | null;
+  user: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -22,65 +19,48 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    const token = localStorage.getItem('token');
+    if (token) {
+      apiClient.setToken(token);
+      fetchProfile();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) throw error;
-      setProfile(data);
+      const data = await apiClient.get<Profile>('/auth/profile');
+      setUser(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
+      apiClient.clearToken();
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const data = await apiClient.post<{ token: string; user: Profile }>('/auth/login', {
       email,
       password,
     });
-    if (error) throw error;
+    apiClient.setToken(data.token);
+    setUser(data.user);
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    apiClient.clearToken();
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

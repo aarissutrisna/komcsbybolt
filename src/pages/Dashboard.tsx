@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { apiClient } from '../lib/supabase';
 import { formatCurrency } from '../utils/currency';
 import { TrendingUp, Users, DollarSign, Calendar } from 'lucide-react';
 
 export function Dashboard() {
-  const { profile } = useAuth();
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     todayOmzet: 0,
     todayCommission: 0,
@@ -16,68 +16,27 @@ export function Dashboard() {
 
   useEffect(() => {
     fetchStats();
-  }, [profile]);
+  }, [user]);
 
   const fetchStats = async () => {
-    if (!profile) return;
+    if (!user) return;
 
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-        .toISOString().split('T')[0];
-
-      if (profile.role === 'admin') {
-        const [todayOmzetRes, monthlyOmzetRes, todayCommissionRes, totalCommissionRes] = await Promise.all([
-          supabase.from('omzet').select('total').eq('tanggal', today),
-          supabase.from('omzet').select('total').gte('tanggal', firstDayOfMonth),
-          supabase.from('commissions').select('nominal').eq('tanggal', today),
-          supabase.from('commissions').select('nominal'),
-        ]);
-
-        setStats({
-          todayOmzet: todayOmzetRes.data?.reduce((sum, item) => sum + item.total, 0) || 0,
-          monthlyOmzet: monthlyOmzetRes.data?.reduce((sum, item) => sum + item.total, 0) || 0,
-          todayCommission: todayCommissionRes.data?.reduce((sum, item) => sum + item.nominal, 0) || 0,
-          totalCommission: totalCommissionRes.data?.reduce((sum, item) => sum + item.nominal, 0) || 0,
-        });
-      } else if (profile.role === 'hrd') {
-        const [todayOmzetRes, monthlyOmzetRes, todayCommissionRes, totalCommissionRes] = await Promise.all([
-          supabase.from('omzet').select('total').eq('branch_id', profile.branch_id).eq('tanggal', today),
-          supabase.from('omzet').select('total').eq('branch_id', profile.branch_id).gte('tanggal', firstDayOfMonth),
-          supabase
-            .from('commissions')
-            .select('nominal, users!inner(branch_id)')
-            .eq('users.branch_id', profile.branch_id)
-            .eq('tanggal', today),
-          supabase
-            .from('commissions')
-            .select('nominal, users!inner(branch_id)')
-            .eq('users.branch_id', profile.branch_id),
-        ]);
-
-        setStats({
-          todayOmzet: todayOmzetRes.data?.reduce((sum, item) => sum + item.total, 0) || 0,
-          monthlyOmzet: monthlyOmzetRes.data?.reduce((sum, item) => sum + item.total, 0) || 0,
-          todayCommission: todayCommissionRes.data?.reduce((sum, item) => sum + item.nominal, 0) || 0,
-          totalCommission: totalCommissionRes.data?.reduce((sum, item) => sum + item.nominal, 0) || 0,
-        });
-      } else {
-        const [todayOmzetRes, monthlyOmzetRes, todayCommissionRes, totalCommissionRes] = await Promise.all([
-          supabase.from('omzet').select('total').eq('branch_id', profile.branch_id).eq('tanggal', today),
-          supabase.from('omzet').select('total').eq('branch_id', profile.branch_id).gte('tanggal', firstDayOfMonth),
-          supabase.from('commissions').select('nominal').eq('user_id', profile.id).eq('tanggal', today),
-          supabase.from('commissions').select('nominal').eq('user_id', profile.id),
-        ]);
-
-        setStats({
-          todayOmzet: todayOmzetRes.data?.reduce((sum, item) => sum + item.total, 0) || 0,
-          monthlyOmzet: monthlyOmzetRes.data?.reduce((sum, item) => sum + item.total, 0) || 0,
-          todayCommission: todayCommissionRes.data?.reduce((sum, item) => sum + item.nominal, 0) || 0,
-          totalCommission: totalCommissionRes.data?.reduce((sum, item) => sum + item.nominal, 0) || 0,
-        });
-      }
+      const stats = await apiClient.get<any>('/omzet/stats');
+      setStats({
+        todayOmzet: stats.today_total || 0,
+        monthlyOmzet: stats.month_total || 0,
+        todayCommission: 0,
+        totalCommission: 0,
+      });
     } catch (error) {
       console.error('Error fetching stats:', error);
+      setStats({
+        todayOmzet: 0,
+        monthlyOmzet: 0,
+        todayCommission: 0,
+        totalCommission: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -95,7 +54,7 @@ export function Dashboard() {
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Selamat datang, {profile?.nama}</p>
+        <p className="text-gray-600 mt-2">Selamat datang, {user?.email}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -144,17 +103,17 @@ export function Dashboard() {
         <h2 className="text-xl font-bold text-gray-900 mb-4">Informasi Sistem</h2>
         <div className="space-y-3">
           <div>
-            <span className="text-sm font-medium text-gray-600">Role: </span>
-            <span className="text-sm font-semibold text-gray-900 uppercase">{profile?.role}</span>
+            <span className="text-sm font-medium text-gray-600">Email: </span>
+            <span className="text-sm font-semibold text-gray-900">{user?.email}</span>
           </div>
           <div>
-            <span className="text-sm font-medium text-gray-600">Username: </span>
-            <span className="text-sm font-semibold text-gray-900">{profile?.username}</span>
+            <span className="text-sm font-medium text-gray-600">Role: </span>
+            <span className="text-sm font-semibold text-gray-900 uppercase">{user?.role}</span>
           </div>
-          {profile?.faktor_pengali && (
+          {user?.faktor_pengali && (
             <div>
               <span className="text-sm font-medium text-gray-600">Faktor Pengali: </span>
-              <span className="text-sm font-semibold text-gray-900">{profile.faktor_pengali}</span>
+              <span className="text-sm font-semibold text-gray-900">{user.faktor_pengali}</span>
             </div>
           )}
         </div>

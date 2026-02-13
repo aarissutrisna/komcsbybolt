@@ -18,7 +18,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { profile, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -38,7 +38,7 @@ export function Layout({ children }: LayoutProps) {
   ];
 
   const filteredNavigation = navigation.filter(item =>
-    profile && item.roles.includes(profile.role)
+    user && item.roles.includes(user.role)
   );
 
   return (
@@ -59,9 +59,9 @@ export function Layout({ children }: LayoutProps) {
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-gray-200">
             <h1 className="text-2xl font-bold text-gray-900">KomCS PJB</h1>
-            <p className="text-sm text-gray-600 mt-1">{profile?.nama}</p>
+            <p className="text-sm text-gray-600 mt-1">{user?.email}</p>
             <span className="inline-block px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full mt-2">
-              {profile?.role.toUpperCase()}
+              {user?.role.toUpperCase()}
             </span>
           </div>
 
