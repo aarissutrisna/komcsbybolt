@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { apiClient } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 interface Profile {
   id: string;
-  email: string;
+  username: string;
+  nama: string;
   role: 'admin' | 'hrd' | 'cs';
   branch_id: string | null;
   faktor_pengali: number | null;
@@ -23,22 +24,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      apiClient.setToken(token);
-      fetchProfile();
-    } else {
-      setLoading(false);
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async () => {
+  const fetchProfile = async (userId: string) => {
     try {
-      const data = await apiClient.get<Profile>('/auth/profile');
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) throw new Error('User profile not found');
+
       setUser(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
-      apiClient.clearToken();
       setUser(null);
     } finally {
       setLoading(false);
@@ -46,16 +66,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const data = await apiClient.post<{ token: string; user: Profile }>('/auth/login', {
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    apiClient.setToken(data.token);
-    setUser(data.user);
+
+    if (error) throw error;
+    if (!data.user) throw new Error('Login failed');
+
+    await fetchProfile(data.user.id);
   };
 
   const signOut = async () => {
-    apiClient.clearToken();
+    await supabase.auth.signOut();
     setUser(null);
   };
 

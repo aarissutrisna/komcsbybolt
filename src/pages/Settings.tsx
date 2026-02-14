@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { apiClient } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { Key } from 'lucide-react';
 
 export function Settings() {
@@ -32,10 +32,11 @@ export function Settings() {
     setLoading(true);
 
     try {
-      await apiClient.post('/auth/change-password', {
-        currentPassword: formData.currentPassword,
-        newPassword: formData.newPassword,
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: formData.newPassword,
       });
+
+      if (updateError) throw updateError;
 
       setMessage('Password berhasil diubah');
       setFormData({
@@ -62,8 +63,12 @@ export function Settings() {
           <h2 className="text-xl font-bold text-gray-900 mb-4">Informasi Akun</h2>
           <div className="space-y-3">
             <div>
-              <label className="text-sm font-medium text-gray-600">Email</label>
-              <p className="text-gray-900 font-semibold">{user?.email}</p>
+              <label className="text-sm font-medium text-gray-600">Username</label>
+              <p className="text-gray-900 font-semibold">{user?.username}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Nama</label>
+              <p className="text-gray-900 font-semibold">{user?.nama}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Role</label>

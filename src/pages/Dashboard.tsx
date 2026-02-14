@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { apiClient } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../utils/currency';
 import { TrendingUp, Users, DollarSign, Calendar } from 'lucide-react';
 
@@ -22,12 +22,44 @@ export function Dashboard() {
     if (!user) return;
 
     try {
-      const stats = await apiClient.get<any>('/omzet/stats');
+      const today = new Date().toISOString().split('T')[0];
+      const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+        .toISOString()
+        .split('T')[0];
+
+      const { data: todayOmzet } = await supabase
+        .from('omzet')
+        .select('total')
+        .eq('tanggal', today)
+        .maybeSingle();
+
+      const { data: monthlyOmzetData } = await supabase
+        .from('omzet')
+        .select('total')
+        .gte('tanggal', firstDayOfMonth)
+        .lte('tanggal', today);
+
+      const monthlyTotal = monthlyOmzetData?.reduce((sum, row) => sum + (row.total || 0), 0) || 0;
+
+      const { data: todayCommissionData } = await supabase
+        .from('commissions')
+        .select('nominal')
+        .eq('tanggal', today)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const { data: totalCommissionData } = await supabase
+        .from('commissions')
+        .select('nominal')
+        .eq('user_id', user.id);
+
+      const totalCommission = totalCommissionData?.reduce((sum, row) => sum + (row.nominal || 0), 0) || 0;
+
       setStats({
-        todayOmzet: stats.today_total || 0,
-        monthlyOmzet: stats.month_total || 0,
-        todayCommission: 0,
-        totalCommission: 0,
+        todayOmzet: todayOmzet?.total || 0,
+        monthlyOmzet: monthlyTotal,
+        todayCommission: todayCommissionData?.nominal || 0,
+        totalCommission,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -54,7 +86,7 @@ export function Dashboard() {
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Selamat datang, {user?.email}</p>
+        <p className="text-gray-600 mt-2">Selamat datang, {user?.nama}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -103,8 +135,12 @@ export function Dashboard() {
         <h2 className="text-xl font-bold text-gray-900 mb-4">Informasi Sistem</h2>
         <div className="space-y-3">
           <div>
-            <span className="text-sm font-medium text-gray-600">Email: </span>
-            <span className="text-sm font-semibold text-gray-900">{user?.email}</span>
+            <span className="text-sm font-medium text-gray-600">Username: </span>
+            <span className="text-sm font-semibold text-gray-900">{user?.username}</span>
+          </div>
+          <div>
+            <span className="text-sm font-medium text-gray-600">Nama: </span>
+            <span className="text-sm font-semibold text-gray-900">{user?.nama}</span>
           </div>
           <div>
             <span className="text-sm font-medium text-gray-600">Role: </span>
